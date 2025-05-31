@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env
+
+backend/package-lock.json
+frontend/package-lock.json
