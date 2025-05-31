@@ -3,6 +3,28 @@ import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
 import { Users } from "lucide-react";
+import { formatMessageTime } from "../lib/utils";
+
+// Helper function to format the last message time in a user-friendly way
+const formatLastMessageTime = (timestamp) => {
+  const now = new Date();
+  const messageDate = new Date(timestamp);
+  const timeDiff = now - messageDate;
+  const dayInMs = 24 * 60 * 60 * 1000;
+  
+  // Less than 24 hours - show time
+  if (timeDiff < dayInMs) {
+    return formatMessageTime(timestamp);
+  }
+  // Less than a week - show day name
+  else if (timeDiff < 7 * dayInMs) {
+    return messageDate.toLocaleDateString('en-US', { weekday: 'short' });
+  }
+  // More than a week - show date
+  else {
+    return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+};
 
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
@@ -14,9 +36,19 @@ const Sidebar = () => {
     getUsers();
   }, [getUsers]);
 
+  // Sort users by the latest message timestamp
+  const sortedUsers = [...users].sort((a, b) => {
+    // If a user doesn't have lastMessageAt, put them at the bottom
+    if (!a.lastMessageAt) return 1;
+    if (!b.lastMessageAt) return -1;
+    
+    // Sort by most recent message (descending order)
+    return new Date(b.lastMessageAt) - new Date(a.lastMessageAt);
+  });
+
   const filteredUsers = showOnlineOnly
-    ? users.filter((user) => onlineUsers.includes(user._id))
-    : users;
+    ? sortedUsers.filter((user) => onlineUsers.includes(user._id))
+    : sortedUsers;
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -65,13 +97,15 @@ const Sidebar = () => {
                   rounded-full ring-2 ring-zinc-900"
                 />
               )}
-            </div>
-
-            {/* User info - only visible on larger screens */}
+            </div>            {/* User info - only visible on larger screens */}
             <div className="hidden lg:block text-left min-w-0">
               <div className="font-medium truncate">{user.fullName}</div>
-              <div className="text-sm text-zinc-400">
-                {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+              <div className="text-sm text-zinc-400 flex items-center gap-2">
+                <span>{onlineUsers.includes(user._id) ? "Online" : "Offline"}</span>                {user.lastMessageAt && (
+                  <span className="text-xs opacity-70">
+                    • {formatLastMessageTime(user.lastMessageAt)}
+                  </span>
+                )}
               </div>
             </div>
           </button>

@@ -7,7 +7,27 @@ export const getUsersForSidebar = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
         const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select('-password');
-        res.status(200).json(filteredUsers);
+        
+        // Get the latest message for each user
+        const usersWithLastMessage = await Promise.all(
+            filteredUsers.map(async (user) => {
+                // Find the latest message between the logged-in user and this user
+                const latestMessage = await Message.findOne({
+                    $or: [
+                        { senderId: loggedInUserId, receiverId: user._id },
+                        { senderId: user._id, receiverId: loggedInUserId }
+                    ]
+                }).sort({ createdAt: -1 }); // Sort by createdAt in descending order
+                
+                // Convert user to plain object and add lastMessageAt property
+                const userObj = user.toObject();
+                userObj.lastMessageAt = latestMessage ? latestMessage.createdAt : null;
+                
+                return userObj;
+            })
+        );
+        
+        res.status(200).json(usersWithLastMessage);
     } catch (error) {
         console.log("Error in getUsersForSidebar:", error.message);
         res.status(500).json({ message: 'Internal server error' });
@@ -48,14 +68,19 @@ export const sendMessage = async (req, res) => {
             receiverId,
             text,
             image: imageUrl
-        });
-
-        await newMessage.save();
+        });        await newMessage.save();
 
         const receiverSocketId = getReceiverSocketId(receiverId);
         if(receiverSocketId) {
             io.to(receiverSocketId).emit('newMessage', newMessage);
         }
+        
+        // Also emit to the sender to update their UI
+        const senderSocketId = getReceiverSocketId(senderId);
+        if(senderSocketId && senderSocketId !== receiverSocketId) {
+            io.to(senderSocketId).emit('newMessage', newMessage);
+        }
+        
         res.status(201).json(newMessage);
     } catch (error) {
         console.log("Error in sendMessage:", error.message);

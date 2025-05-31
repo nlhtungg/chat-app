@@ -32,17 +32,28 @@ export const useChatStore = create((set, get) => ({
     } finally {
       set({ isMessagesLoading: false });
     }
-  },
-  sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+  },  sendMessage: async (messageData) => {
+    const { selectedUser, messages, users } = get();
     try {
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
       set({ messages: [...messages, res.data] });
+      
+      // Update the lastMessageAt time in the users array
+      const updatedUsers = users.map(user => {
+        if (user._id === selectedUser._id) {
+          return {
+            ...user,
+            lastMessageAt: res.data.createdAt
+          };
+        }
+        return user;
+      });
+      
+      set({ users: updatedUsers });
     } catch (error) {
       toast.error(error.response.data.message);
     }
   },
-
   subscribeToMessages: () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
@@ -51,11 +62,27 @@ export const useChatStore = create((set, get) => ({
 
     socket.on("newMessage", (newMessage) => {
       const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
-
-      set({
-        messages: [...get().messages, newMessage],
+      
+      // Update the messages array for the selected conversation
+      if (isMessageSentFromSelectedUser) {
+        set({
+          messages: [...get().messages, newMessage],
+        });
+      }
+      
+      // Update the last message timestamp for the user in the users list
+      const { users } = get();
+      const updatedUsers = users.map(user => {
+        if (user._id === newMessage.senderId || user._id === newMessage.receiverId) {
+          return {
+            ...user,
+            lastMessageAt: newMessage.createdAt
+          };
+        }
+        return user;
       });
+      
+      set({ users: updatedUsers });
     });
   },
 
