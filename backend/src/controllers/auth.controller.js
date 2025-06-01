@@ -98,3 +98,45 @@ export const checkAuth = (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 }
+
+export const googleAuthCallback = (req, res) => {
+    try {
+        // Passport will set req.user after successful authentication
+        generateToken(req.user._id, res);
+        
+        // Redirect to the frontend with success=true query param
+        res.redirect(
+            process.env.NODE_ENV === 'production'
+                ? '/?success=true'
+                : 'http://localhost:5173/?success=true'
+        );
+    } catch (error) {
+        console.log("Error in googleAuthCallback controller:", error.message);
+        res.redirect(
+            process.env.NODE_ENV === 'production'
+                ? '/?error=true'
+                : 'http://localhost:5173/?error=true'
+        );
+    }
+};
+
+export const facebookAuthCallback = (req, res) => {
+    try {
+        // Passport will set req.user after successful authentication
+        generateToken(req.user._id, res);
+        
+        // Redirect to the frontend with success=true query param
+        res.redirect(
+            process.env.NODE_ENV === 'production'
+                ? '/?success=true'
+                : 'http://localhost:5173/?success=true'
+        );
+    } catch (error) {
+        console.log("Error in facebookAuthCallback controller:", error.message);
+        res.redirect(
+            process.env.NODE_ENV === 'production'
+                ? '/?error=true'
+                : 'http://localhost:5173/?error=true'
+        );
+    }
+};

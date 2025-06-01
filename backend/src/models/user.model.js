@@ -10,15 +10,24 @@ const userSchema = new mongoose.Schema(
         fullName: {
             type: String,
             required: true,
-        },
-        password: {
+        },        password: {
             type: String,
-            required: true,
+            required: function() {
+                return !this.provider || this.provider === 'local';
+            },
             minlength: 6,
         },
         profilePic: {
             type: String,
             default: "",
+        },
+        provider: {
+            type: String,
+            enum: ['local', 'google', 'facebook'],
+            default: 'local'
+        },
+        providerId: {
+            type: String,
         }
     },
     { timestamps: true }
