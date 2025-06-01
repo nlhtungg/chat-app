@@ -30,19 +30,18 @@ passport.use(
           return done(null, user);
         }
 
-        // If user doesn't exist, create a new user
-        // Extract profile information
+        // If user doesn't exist, create a new user        // Extract profile information
         const email = profile.emails && profile.emails[0] ? profile.emails[0].value : '';
-        const name = profile.displayName || '';
-        const avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
+        const fullName = profile.displayName || '';
+        const profilePic = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
 
         // Create new user
         user = new User({
-          name,
+          fullName,
           email,
           provider: 'google',
           providerId: profile.id,
-          avatar,
+          profilePic,
           // Set a random password for OAUth users since it's required by the model
           // but won't be used for authentication
           password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
@@ -79,19 +78,17 @@ passport.use(
         if (user) {
           // User exists, return user
           return done(null, user);
-        }
-
-        // User doesn't exist, create new user
+        }        // User doesn't exist, create new user
         const email = profile.emails && profile.emails[0] ? profile.emails[0].value : '';
-        const name = profile.displayName || '';
-        const avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
+        const fullName = profile.displayName || '';
+        const profilePic = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
 
         user = new User({
-          name,
+          fullName,
           email,
           provider: 'facebook',
           providerId: profile.id,
-          avatar,
+          profilePic,
           // Set a random password for OAUth users
           password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
         });
