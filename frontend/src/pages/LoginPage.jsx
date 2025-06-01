@@ -24,12 +24,11 @@ const LoginPage = () => {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="flex flex-col items-center gap-2 group">
-              <div
+            <div className="flex flex-col items-center gap-2 group">              <div
                 className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20
               transition-colors"
               >
-                <MessageSquare className="w-6 h-6 text-primary" />
+                <img src="/icon.png" alt="Chatty" className="w-6 h-6" />
               </div>
               <h1 className="text-2xl font-bold mt-2">Welcome Back</h1>
               <p className="text-base-content/60">Sign in to your account</p>
