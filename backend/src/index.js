@@ -10,6 +10,7 @@ import passport from './lib/passport.js';
 import authRoutes from "./routes/auth.route.js";
 import oauthRoutes from "./routes/oauth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import videoCallRoutes from "./routes/videocall.route.js";
 import { app, server } from "./lib/socket.js";
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", oauthRoutes); // Add OAuth routes
 app.use("/api/messages", messageRoutes);
+app.use("/api/videocall", videoCallRoutes); // Add video call routes
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));

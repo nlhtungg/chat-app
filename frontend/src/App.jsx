@@ -5,6 +5,9 @@ import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import CallHistoryPage from "./pages/CallHistoryPage";
+import VideoCall from "./components/VideoCall";
+import IncomingCallNotification from "./components/IncomingCallNotification";
 
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
@@ -52,15 +55,18 @@ const App = () => {
 
   return (
     <div data-theme={theme}>
-      <Navbar />
-
-      <Routes>
+      <Navbar />      <Routes>
         <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
         <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/calls" element={authUser ? <CallHistoryPage /> : <Navigate to="/login" />} />
+        <Route path="/video-call/:callId" element={authUser ? <VideoCall /> : <Navigate to="/login" />} />
       </Routes>
+
+      {/* Show incoming call notification if user is authenticated */}
+      {authUser && <IncomingCallNotification />}
 
       <Toaster />
     </div>
