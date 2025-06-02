@@ -2,13 +2,21 @@ import { useState, useEffect } from 'react';
 import { Phone, X } from 'lucide-react';
 import { socket } from '../lib/socket';
 import { getRingtone, cleanup } from '../lib/ringtone';
+import { useChatStore } from '../store/useChatStore';
 
 const IncomingCallNotification = () => {
   const [incomingCall, setIncomingCall] = useState(null);
-  
+  const { inCall } = useChatStore();
   useEffect(() => {
     // Listen for incoming calls
     socket.on('incomingCall', (callData) => {
+      // Check if user is already in a call using global state
+      if (inCall) {
+        // User is already in a call, automatically reject the incoming call
+        socket.emit('callRejected', { callId: callData.callId });
+        return;
+      }
+      
       setIncomingCall(callData);
       
       // Play ringtone
@@ -19,18 +27,21 @@ const IncomingCallNotification = () => {
         console.error('Failed to play ringtone:', err);
       }
     });
-      return () => {
+    
+    return () => {
       socket.off('incomingCall');
       // Clean up audio on unmount
       cleanup();
     };
   }, []);
-  
-  const handleAcceptCall = () => {
+    const handleAcceptCall = () => {
     if (!incomingCall) return;
     
     // Stop ringtone
     cleanup();
+    
+    // Mark user as in call
+    useChatStore.setState({ inCall: true });
     
     // Open a new window for the video call
     const videoCallWindow = window.open(

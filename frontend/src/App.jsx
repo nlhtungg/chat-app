@@ -10,7 +10,7 @@ import ConnectPage from "./pages/ConnectPage";
 import VideoCall from "./components/VideoCall";
 import IncomingCallNotification from "./components/IncomingCallNotification";
 
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { useEffect } from "react";
@@ -22,6 +22,7 @@ import toast from "react-hot-toast";
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
   const { theme } = useThemeStore();
+  const location = useLocation();
 
   console.log({ onlineUsers });
   useEffect(() => {
@@ -53,10 +54,13 @@ const App = () => {
         <Loader className="size-10 animate-spin" />
       </div>
     );
+  // Check if the current path is a video call path
+  const isInVideoCall = location.pathname.startsWith('/video-call/');
 
   return (
     <div data-theme={theme}>
-      <Navbar />      <Routes>
+      {!isInVideoCall && <Navbar />}
+      <Routes>
         <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
         <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />

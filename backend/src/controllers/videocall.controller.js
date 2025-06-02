@@ -18,6 +18,38 @@ export const initiateCall = async (req, res) => {
         if (!receiver) {
             return res.status(404).json({ error: "Receiver not found" });
         }
+        
+        // Check if caller or receiver is already in a call
+        const isCallerInCall = Array.from(activeCalls.values()).some(call => 
+            (call.callerId === callerId.toString() || call.receiverId === callerId.toString()) && 
+            (call.status === "active" || call.status === "pending")
+        );
+        
+        if (isCallerInCall) {
+            return res.status(400).json({ error: "You are already in an active call" });
+        }
+          // Check if receiver is already in a call
+        const isReceiverInCall = Array.from(activeCalls.values()).some(call => 
+            (call.callerId === receiverId || call.receiverId === receiverId) && 
+            (call.status === "active" || call.status === "pending")
+        );
+        
+        if (isReceiverInCall) {
+            // Notify caller that receiver is already in a call
+            const receiverSocketId = getReceiverSocketId(receiverId);
+            
+            // Create a minimal missed call record for history
+            await Call.create({
+                callId: uuidv4(), // Different ID as we're not storing in activeCalls
+                callerId,
+                receiverId,
+                status: 'missed',
+                startTime: new Date(),
+                endTime: new Date()
+            });
+            
+            return res.status(400).json({ error: "User is already in another call" });
+        }
 
         // Generate a unique call ID
         const callId = uuidv4();
@@ -138,9 +170,8 @@ export const handleCallRejected = async (callId, userId) => {
         console.error("Error updating call history:", error);
     }
     
-    setTimeout(() => {
-        activeCalls.delete(callId);
-    }, 5000);
+    // Clean up call from memory immediately to prevent blocking new calls
+    activeCalls.delete(callId);
     
     return call;
 };
@@ -171,10 +202,8 @@ export const handleCallEnded = async (callId, userId) => {
     } catch (error) {
         console.error("Error updating call history:", error);
     }
-    
-    setTimeout(() => {
-        activeCalls.delete(callId);
-    }, 5000);
+      // Clean up call from memory immediately to prevent blocking new calls
+    activeCalls.delete(callId);
     
     return call;
 };

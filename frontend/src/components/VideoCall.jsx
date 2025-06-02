@@ -4,6 +4,7 @@ import { PhoneOff, Mic, MicOff, Video as VideoIcon, VideoOff, Monitor, X, Refres
 import { socket } from '../lib/socket';
 import { axiosInstance } from '../lib/axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { useChatStore } from '../store/useChatStore';
 import { checkMediaPermissions, stopMediaTracks, checkDeviceCapabilities } from '../lib/mediaUtils';
 
 const VideoCall = () => {
@@ -26,9 +27,11 @@ const VideoCall = () => {
   const peerConnectionRef = useRef(null);
   const screenShareTrackRef = useRef(null);
   const callTimerRef = useRef(null);
-  
-  // Initialize WebRTC
+    // Initialize WebRTC and set in-call state
   useEffect(() => {
+    // Mark user as in call
+    useChatStore.setState({ inCall: true });
+    
     const initializeCall = async () => {
       try {
         // Check device capabilities first
@@ -145,8 +148,7 @@ const VideoCall = () => {
     };
     
     initializeCall();
-    
-    return () => {
+      return () => {
       // Clean up
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
@@ -163,6 +165,9 @@ const VideoCall = () => {
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
       }
+      
+      // Mark user as no longer in call when component unmounts
+      useChatStore.setState({ inCall: false });
     };
   }, [callId, retryCount]);
   
@@ -218,8 +223,7 @@ const VideoCall = () => {
       socket.off('callEnded');
     };
   }, [callId]);
-  
-  const handleEndCall = () => {
+    const handleEndCall = () => {
     socket.emit('endCall', { callId });
     setCallStatus('ended');
     
@@ -234,6 +238,9 @@ const VideoCall = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
     }
+    
+    // Mark user as no longer in call
+    useChatStore.setState({ inCall: false });
     
     // Close the window after a short delay
     setTimeout(() => {

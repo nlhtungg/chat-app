@@ -3,9 +3,9 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import { axiosInstance } from "../lib/axios";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
-const ChatHeader = () => {
-  const { selectedUser, setSelectedUser } = useChatStore();
+const ChatHeader = () => {  const { selectedUser, setSelectedUser, inCall } = useChatStore();
   const { onlineUsers } = useAuthStore();
   const [isCallActive, setIsCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
@@ -28,11 +28,10 @@ const ChatHeader = () => {
       });
       
       const data = response.data;
-        if (response.status !== 200) {
+      if (response.status !== 200) {
         throw new Error(data.error || 'Failed to initiate call');
       }
-      
-      // If successful, open a new window for the video call
+        // If successful, open a new window for the video call
       const videoCallWindow = window.open(
         `/video-call/${data.callId}`,
         'VideoCall',
@@ -42,6 +41,9 @@ const ChatHeader = () => {
       // Set local UI state to show call is in progress
       setIsCallActive(true);
       setCallDuration(0);
+      
+      // Update global in-call state
+      useChatStore.setState({ inCall: true });
       
       // When video call window is closed
       const checkWindow = setInterval(() => {
@@ -53,13 +55,24 @@ const ChatHeader = () => {
       
     } catch (error) {
       console.error("Error initiating video call:", error);
-      alert("Failed to start video call. Please try again.");
+        // Check for specific error messages
+      const errorMsg = error.response?.data?.error || error.message || "Failed to start video call";
+      
+      // Show more specific error message using toast for better UI
+      if (errorMsg.includes("already in another call")) {
+        toast.error(`${selectedUser.fullName} is already in another call. Please try again later.`);
+      } else if (errorMsg.includes("already in an active call")) {
+        toast.error("You're already in an active call. Please end your current call before starting a new one.");
+      } else {
+        toast.error(`Failed to start video call: ${errorMsg}`);
+      }
     }
   };
-  
-  const endCall = () => {
+    const endCall = () => {
     setIsCallActive(false);
     setCallDuration(0);
+    // Update global in-call state
+    useChatStore.setState({ inCall: false });
     console.log("Ending call with:", selectedUser.fullName);
   };
   // Format call duration as mm:ss
@@ -116,10 +129,15 @@ const ChatHeader = () => {
           </div>          {/* Action buttons */}          <div className="flex items-center gap-2">
             {/* Video Call button */}
             <button 
-              className={`btn btn-sm btn-circle ${onlineUsers.includes(selectedUser._id) ? 'btn-primary' : 'btn-disabled'} transition-all hover:scale-105 active:scale-95`}
+              className={`btn btn-sm btn-circle ${onlineUsers.includes(selectedUser._id) && !inCall ? 'btn-primary' : 'btn-disabled'} transition-all hover:scale-105 active:scale-95`}
               onClick={handleVideoCall}
-              disabled={!onlineUsers.includes(selectedUser._id)}
-              title={onlineUsers.includes(selectedUser._id) ? "Start video call" : "User is offline"}
+              disabled={!onlineUsers.includes(selectedUser._id) || inCall}
+              title={!onlineUsers.includes(selectedUser._id) 
+                ? "User is offline" 
+                : inCall 
+                  ? "You are already in a call" 
+                  : "Start video call"
+              }
             >
               <Video className="size-4" />
             </button>
