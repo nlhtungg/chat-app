@@ -76,13 +76,29 @@ export const logout = (req, res) => {
 
 export const updateProfile = async (req, res) => {
     try {
-        const { profilePic } = req.body;
+        const { profilePic, fullName } = req.body;
         const userId = req.user._id;
-        if( !profilePic ) {
-            return res.status(400).json({ message: 'Please provide a profile picture' });
+        
+        // Create an update object
+        const updateData = {};
+        
+        // If profilePic is provided, upload it to cloudinary and add to update data
+        if (profilePic) {
+            const uploadResponse = await cloudinary.uploader.upload(profilePic);
+            updateData.profilePic = uploadResponse.secure_url;
         }
-        const uploadResponse = await cloudinary.uploader.upload(profilePic);
-        const updatedUser = await User.findByIdAndUpdate(userId, {profilePic:uploadResponse.secure_url}, {new: true});
+        
+        // If fullName is provided, add it to update data
+        if (fullName) {
+            updateData.fullName = fullName;
+        }
+        
+        // Check if there's anything to update
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: 'No data provided for update' });
+        }
+        
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {new: true});
         res.status(200).json(updatedUser); 
     } catch (error) {
         console.log("Error in updateProfile controller:", error.message);
@@ -138,5 +154,49 @@ export const facebookAuthCallback = (req, res) => {
                 ? '/?error=true'
                 : 'http://localhost:5173/?error=true'
         );
+    }
+};
+
+export const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user._id;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Both current password and new password are required' });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+        }
+        
+        // Get user with password
+        const user = await User.findById(userId);
+        
+        // Check if user is using OAuth (Google/Facebook) authentication
+        if (user.provider && user.provider !== 'local') {
+            return res.status(400).json({ 
+                message: `Cannot change password for accounts using ${user.provider} authentication` 
+            });
+        }
+        
+        // Verify current password
+        const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordCorrect) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        
+        // Update password
+        user.password = hashedPassword;
+        await user.save();
+        
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.log("Error in changePassword controller:", error.message);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
