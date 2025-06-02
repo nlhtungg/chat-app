@@ -6,11 +6,16 @@ import { getReceiverSocketId, io } from '../lib/socket.js';
 export const getUsersForSidebar = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
-        const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select('-password');
         
-        // Get the latest message for each user
+        // Get the current user with friends populated
+        const currentUser = await User.findById(loggedInUserId).populate('friends');
+        
+        // Filter out friends
+        const friendUsers = currentUser.friends || [];
+        
+        // Get the latest message for each friend
         const usersWithLastMessage = await Promise.all(
-            filteredUsers.map(async (user) => {
+            friendUsers.map(async (user) => {
                 // Find the latest message between the logged-in user and this user
                 const latestMessage = await Message.findOne({
                     $or: [

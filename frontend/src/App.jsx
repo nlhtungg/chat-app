@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import CallHistoryPage from "./pages/CallHistoryPage";
+import ConnectPage from "./pages/ConnectPage";
 import VideoCall from "./components/VideoCall";
 import IncomingCallNotification from "./components/IncomingCallNotification";
 
@@ -62,6 +63,7 @@ const App = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
         <Route path="/calls" element={authUser ? <CallHistoryPage /> : <Navigate to="/login" />} />
+        <Route path="/connect" element={authUser ? <ConnectPage /> : <Navigate to="/login" />} />
         <Route path="/video-call/:callId" element={authUser ? <VideoCall /> : <Navigate to="/login" />} />
       </Routes>
 
